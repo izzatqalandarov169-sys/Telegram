@@ -23,13 +23,11 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Setup Android SDK / NDK
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Setup NDK 27.2
-        uses: android-actions/ndk@v1
-        with:
-          ndk-version: 27.2.12479018
+      - name: Install required Android NDK
+        run: sdkmanager "ndk;27.2.12479018"
 
       - name: Make Gradle executable
         run: chmod +x gradlew
