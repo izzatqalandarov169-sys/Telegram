@@ -144,7 +144,7 @@ public class StarsController {
     private long lastBalanceLoaded;
     private boolean balanceLoading, balanceLoaded;
     @NonNull
-    public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(0);
+    public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(500_000_000L);
     public long minus;
 
     public TL_stars.StarsAmount getBalance() {
