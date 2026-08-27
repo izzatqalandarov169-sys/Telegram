@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set local demo Stars balance
+      - name: Configure 500 million demo Stars for the specified account
         shell: bash
         run: |
           python3 - <<'PY'
@@ -25,16 +25,41 @@ jobs:
 
           path = Path('TMessagesProj/src/main/java/org/telegram/ui/Stars/StarsController.java')
           text = path.read_text(encoding='utf-8')
-          old = 'public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(0);'
-          new = 'public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(500_000_000L);'
+          demo_id = 8572946823
 
-          if new in text:
-              print('500,000,000 demo Stars already configured.')
-          elif old in text:
-              path.write_text(text.replace(old, new, 1), encoding='utf-8')
-              print('Configured 500,000,000 demo Stars.')
-          else:
-              raise SystemExit('Target Stars balance declaration was not found; no changes made.')
+          text = text.replace(
+              'public final int currentAccount;\n    public final boolean ton;',
+              'public static final long DEMO_STARS_USER_ID = 8572946823L;\n\n    public final int currentAccount;\n    public final boolean ton;'
+          ) if 'DEMO_STARS_USER_ID' not in text else text
+
+          text = text.replace(
+              '    private StarsController(int account, boolean ton) {',
+              '    private boolean isDemoStarsAccount() {\n        return !ton && UserConfig.getInstance(currentAccount).getClientUserId() == DEMO_STARS_USER_ID;\n    }\n\n    private StarsController(int account, boolean ton) {'
+          ) if 'private boolean isDemoStarsAccount()' not in text else text
+
+          old = '                    this.balance = r.balance;\n                    this.minus = 0;'
+          new = '                    if (!isDemoStarsAccount()) {\n                        this.balance = r.balance;\n                    }\n                    this.minus = 0;'
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('Could not locate server balance assignment.')
+
+          old = '    public void updateBalance(TL_stars.StarsAmount balance) {\n        if (!this.balance.equals(balance)) {'
+          new = '    public void updateBalance(TL_stars.StarsAmount balance) {\n        if (isDemoStarsAccount()) {\n            return;\n        }\n        if (!this.balance.equals(balance)) {'
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('Could not locate updateBalance method.')
+
+          balance_old = 'public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(0);'
+          balance_new = 'public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(500_000_000L);'
+          if balance_old in text:
+              text = text.replace(balance_old, balance_new, 1)
+          elif balance_new not in text:
+              raise SystemExit('Could not locate Stars balance declaration.')
+
+          path.write_text(text, encoding='utf-8')
+          print(f'Demo Stars configured for user ID {demo_id}: 500,000,000 ⭐')
           PY
 
       - name: Commit change
@@ -47,5 +72,5 @@ jobs:
             echo 'No source change needed.'
             exit 0
           fi
-          git commit -m '⭐ Set local demo Stars balance to 500 million [skip ci]'
+          git commit -m '⭐ Add account-specific 500 million Stars demo'
           git push
