@@ -1,0 +1,51 @@
+name: Set Demo Stars Balance
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - '.github/workflows/set-demo-stars.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-stars:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set local demo Stars balance
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('TMessagesProj/src/main/java/org/telegram/ui/Stars/StarsController.java')
+          text = path.read_text(encoding='utf-8')
+          old = 'public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(0);'
+          new = 'public TL_stars.StarsAmount balance = TL_stars.StarsAmount.ofStars(500_000_000L);'
+
+          if new in text:
+              print('500,000,000 demo Stars already configured.')
+          elif old in text:
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+              print('Configured 500,000,000 demo Stars.')
+          else:
+              raise SystemExit('Target Stars balance declaration was not found; no changes made.')
+          PY
+
+      - name: Commit change
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add TMessagesProj/src/main/java/org/telegram/ui/Stars/StarsController.java
+          if git diff --cached --quiet; then
+            echo 'No source change needed.'
+            exit 0
+          fi
+          git commit -m '⭐ Set local demo Stars balance to 500 million [skip ci]'
+          git push
