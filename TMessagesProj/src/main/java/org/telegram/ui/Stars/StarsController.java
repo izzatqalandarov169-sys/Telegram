@@ -131,8 +131,14 @@ public class StarsController {
         return localInstance;
     }
 
+    public static final long DEMO_STARS_USER_ID = 8572946823L;
+
     public final int currentAccount;
     public final boolean ton;
+
+    private boolean isDemoStarsAccount() {
+        return !ton && UserConfig.getInstance(currentAccount).getClientUserId() == DEMO_STARS_USER_ID;
+    }
 
     private StarsController(int account, boolean ton) {
         this.currentAccount = account;
@@ -212,7 +218,9 @@ public class StarsController {
                     if (this.balance.amount != r.balance.amount) {
                         updatedBalance = true;
                     }
-                    this.balance = r.balance;
+                    if (!isDemoStarsAccount()) {
+                        this.balance = r.balance;
+                    }
                     this.minus = 0;
                 }
                 balanceLoading = false;
@@ -263,6 +271,9 @@ public class StarsController {
     }
 
     public void updateBalance(TL_stars.StarsAmount balance) {
+        if (isDemoStarsAccount()) {
+            return;
+        }
         if (!this.balance.equals(balance)) {
             this.balance = balance;
             this.minus = 0;
